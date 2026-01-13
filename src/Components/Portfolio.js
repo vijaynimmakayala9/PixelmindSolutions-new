@@ -339,7 +339,7 @@ function Portfolio() {
                             display: flex;
                             align-items: center;
                             gap: 10px;
-                            padding: 12px 24px;
+                            padding: 8px 16px;
                             background: #f8f9fa;
                             border: 2px solid transparent;
                             border-radius: 50px;
@@ -441,37 +441,42 @@ function Portfolio() {
                             <div className="row g-4">
                                 {filteredItems.map((item) => {
                                     const isExpanded = expandedItems[item.id];
-                                    const shouldTruncate = item.description.length > 100;
+                                    const shouldTruncate = item.description.length > 90;
                                     const displayedText = isExpanded || !shouldTruncate
                                         ? item.description
-                                        : item.description.slice(0, 100) + '...';
+                                        : item.description.slice(0, 90) + '...';
 
                                     return (
-                                        <div key={item.id} className="col-lg-4 col-md-6">
+                                        <div key={item.id} className="col-lg-3 col-md-6 col-sm-12">
                                             <div className="service-two__item">
                                                 <div className="image">
                                                     <img
                                                         src={item.image}
                                                         alt={item.title}
                                                         className="img-fluid w-100"
-                                                        style={{ height: "250px", objectFit: "cover", borderRadius: "10px" }}
+                                                        style={{ height: "180px", objectFit: "cover", borderRadius: "10px" }}
                                                     />
                                                     {/* Type Badge */}
                                                     <div className="type-badge">
-                                                        {item.type === 'website' ? (
+                                                        {item.type === "website" ? (
                                                             <span className="website-badge">
                                                                 <i className="fa-solid fa-globe me-1"></i> Website
                                                             </span>
-                                                        ) : (
+                                                        ) : item.type === "app" ? (
                                                             <span className="app-badge">
                                                                 <i className="fa-solid fa-mobile-screen-button me-1"></i> Mobile App
                                                             </span>
-                                                        )}
+                                                        ) : item.type === "app" ? (
+                                                            <span className='digital-badge'>
+                                                                <i className="fa-solid fa-chart-line me-1"></i> Digital Marketing
+                                                            </span>
+                                                        ) : null}
+
                                                     </div>
                                                 </div>
 
                                                 <div className="service-two__content">
-                                                    <div className="icon">
+                                                    <div className="icon rounded">
                                                         <img src={item.icon} alt="icon" className='img-fluid' />
                                                     </div>
                                                     <div className="shape">
@@ -487,15 +492,15 @@ function Portfolio() {
                                                         {shouldTruncate && (
                                                             <span
                                                                 onClick={() => toggleExpand(item.id)}
-                                                                className="ms-1"
-                                                                style={{ color: "#06cabc", cursor: 'pointer', fontWeight: 'bold' }}
+                                                                className="ms-1 text-break lh-1"
+                                                                style={{ color: "#06cabc", cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}
                                                             >
                                                                 {isExpanded ? 'View Less' : 'View More'}
                                                             </span>
                                                         )}
                                                     </p>
                                                     <button
-                                                        className="btn btn-primary"
+                                                        className="btn btn-primary w-100"
                                                         onClick={() => window.open(item.link, '_blank')}
                                                     >
                                                         Visit Us
@@ -520,7 +525,7 @@ function Portfolio() {
                             right: 15px;
                             z-index: 2;
                         }
-                        .website-badge, .app-badge {
+                        .website-badge, .app-badge, .digital-badge {
                             display: inline-flex;
                             align-items: center;
                             padding: 6px 12px;
@@ -537,6 +542,11 @@ function Portfolio() {
                         }
                         .app-badge {
                             background: rgba(16, 185, 129, 0.9);
+                            color: white;
+                            border: 1px solid rgba(255, 255, 255, 0.2);
+                        }
+                        .digital-badge {
+                            background: rgba(236, 72, 153, 0.9);
                             color: white;
                             border: 1px solid rgba(255, 255, 255, 0.2);
                         }
