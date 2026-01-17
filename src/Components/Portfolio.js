@@ -220,7 +220,7 @@ function Portfolio() {
             description: "Clynix is a smart medicine booking and delivery application that allows users to order prescribed and over-the-counter medicines easily from nearby pharmacies. The app offers features like digital prescription uploads, real-time order tracking, secure payments, and fast doorstep delivery, making healthcare access simple and reliable.",
             image: "/assets/portfolio/clynixlogo.png",
             icon: "/assets/portfolio/clynixlogo.png",
-            link: "https://clynix.com/",
+            link: "https://clynix.vercel.app/",
             type: "website"
         },
         {

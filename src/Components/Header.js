@@ -7,16 +7,36 @@ function Header() {
   const [sticky, setSticky] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [chatModal, setChatModal] = useState(false);
-
+  const [showChatMessage, setShowChatMessage] = useState(false);
 
   useEffect(() => {
-    // handleShow();
+    // Check if message has been shown before (using localStorage)
+    const hasShownMessage = localStorage.getItem('chatMessageShown1');
+
+    if (!hasShownMessage) {
+      // Show message after a short delay for better UX
+      const timer = setTimeout(() => {
+        setShowChatMessage(true);
+        localStorage.setItem('chatMessageShown', 'true');
+
+        // Hide message after 10 seconds
+        const hideTimer = setTimeout(() => {
+          setShowChatMessage(false);
+        }, 10000);
+
+        return () => clearTimeout(hideTimer);
+      }, 2000); // 2 second delay before showing message
+
+      return () => clearTimeout(timer);
+    }
+
     window.scrollTo({ top: 0, behavior: "smooth" });
     window.addEventListener("scroll", isSticky);
     return () => {
       window.removeEventListener("scroll", isSticky);
     };
   }, []);
+
   const isSticky = () => {
     const scrollTop = window.scrollY;
     const stickyClass = scrollTop >= 180 ? "header-area menu-fixed fadeInDown" : "";
@@ -25,6 +45,7 @@ function Header() {
   };
 
   const classes = `${sticky}`;
+
   return (
     <>
       <div>
@@ -143,8 +164,6 @@ function Header() {
             <div className="header__main">
               <Link to="/" className="logo1">
                 <img src="/assets/images/logo/logo1.png" alt="logo" />
-                {/* <img style={{width:"50px"}} src="/assets/images/icon/counter-icon3.png" alt="icon" />
-    <h2 className="text-white">pixelmind</h2> */}
               </Link>
               <div className="main-menu">
                 <nav className="navshowandhide">
@@ -158,19 +177,15 @@ function Header() {
                     <li>
                       <Link to="/services">Services</Link>
                     </li>
-
                     <li>
                       <Link to="/portfolio">Portfolio</Link>
                     </li>
-
                     <li>
                       <Link to="/blog">Blog</Link>
                     </li>
-
                     <li>
                       <Link to="/contact">Contact Us</Link>
                     </li>
-
                   </ul>
                 </nav>
               </div>
@@ -178,7 +193,6 @@ function Header() {
                 <button className="btn-one" onClick={() => setShowModal(true)}>
                   Get A Quote <i className="fa-regular fa-arrow-right-long" />
                 </button>
-
               </div>
               <div className="bars d-block d-lg-none">
                 <i id="openButton" className="fa-solid fa-bars" />
@@ -191,12 +205,10 @@ function Header() {
         <div id="targetElement" className="sidebar-area sidebar__hide">
           <div className="sidebar__overlay" />
           <Link to="/" className="logo1  mb-40">
-            <img style={{ width: "50px" }} src="/assets/images/icon/counter-icon3.png" alt="icon" />
-            <h2 className="text-white">pixelmind</h2>
+            <img style={{ width: "50px" }} src="/logo1.png" alt="icon" />
+            <h2 className="text-white ms-1">Pixelmind</h2>
           </Link>
           <div className="sidebar__search mb-30">
-            {/* <input type="text" placeholder="Search..." />
-      <i className="fa-regular fa-magnifying-glass" /> */}
             <div className="">
               <div className="main-menu">
                 <nav className="">
@@ -210,19 +222,15 @@ function Header() {
                     <li>
                       <Link style={{ color: "white" }} to="/services">Services</Link>
                     </li>
-
                     <li>
                       <Link style={{ color: "white" }} to="/portfolio">Portfolio</Link>
                     </li>
-
                     <li>
                       <Link style={{ color: "white" }} to="/blog">Blog</Link>
                     </li>
-
                     <li>
                       <Link style={{ color: "white" }} to="/contact">Contact Us</Link>
                     </li>
-
                   </ul>
                 </nav>
               </div>
@@ -230,7 +238,6 @@ function Header() {
                 <button className="btn-one" onClick={() => setShowModal(true)}>
                   Get A Quote <i className="fa-regular fa-arrow-right-long" />
                 </button>
-
               </div>
               <div className="bars d-none d-lg-none">
                 <i id="openButton" className="fa-solid fa-bars" />
@@ -239,7 +246,6 @@ function Header() {
           </div>
           <div className="mobile-menu overflow-hidden" />
           <ul className="info pt-40">
-
             <li className="py-2">
               <i className="fa-solid primary-color fa-phone-volume" />{" "}
               <a href="tel: +91 9666317749"> +91 9666317749</a>,<a href="tel: +91 9052097475"> +91 9052097475</a>
@@ -289,11 +295,20 @@ function Header() {
           </div>
         </div>
 
-        {/* Chat with AI floating button */}
+        {/* Chat with AI floating button with message */}
         <div className="ai-chat-float">
+          {showChatMessage && (
+            <div className="ai-chat-message">
+              <span>Ask AI for Help</span>
+              <div className="ai-chat-arrow"></div>
+            </div>
+          )}
           <button
             className="ai-chat-link"
-            onClick={() => setChatModal(true)}
+            onClick={() => {
+              setChatModal(true);
+              setShowChatMessage(false); // Hide message when clicked
+            }}
           >
             <i className="fa-solid fa-robot ai-chat-icon"></i>
           </button>
@@ -313,6 +328,173 @@ function Header() {
       </div>
       <ContactModal show={showModal} onClose={() => setShowModal(false)} />
       <ChatbotModal show={chatModal} onClose={() => setChatModal(false)} />
+
+      <style jsx>{`
+        .ai-chat-float {
+          position: fixed;
+          bottom: 100px;
+          right: 30px;
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        }
+        
+        .ai-chat-message {
+          position: relative;
+          background: linear-gradient(135deg, #fff 0%, #fff 100%);
+          color: white;
+          padding: 12px 20px;
+          border-radius: 25px;
+          font-size: 14px;
+          font-weight: 600;
+          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+          animation: fadeInSlide 0.5s ease-out;
+          white-space: nowrap;
+          animation: pulse 2s infinite;
+        }
+        
+        .ai-chat-message span {
+          display: inline-block;
+          animation: wiggle 2s ease-in-out infinite;
+        }
+        
+        .ai-chat-arrow {
+          position: absolute;
+          right: -8px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 0;
+          height: 0;
+          border-top: 8px solid transparent;
+          border-bottom: 8px solid transparent;
+          border-left: 8px solid #764ba2;
+        }
+        
+        .ai-chat-link {
+          width: 60px;
+          height: 60px;
+          background: linear-gradient(135deg, #fff 0%, #fff 100%);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 28px;
+          border: none;
+          cursor: pointer;
+          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+          transition: all 0.3s ease;
+        }
+        
+        .ai-chat-link:hover {
+          transform: scale(1.1);
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .ai-chat-icon {
+          animation: float 3s ease-in-out infinite;
+        }
+        
+        .whatsapp-float {
+          position: fixed;
+          bottom: 30px;
+          right: 30px;
+          z-index: 1000;
+        }
+        
+        .whatsapp-link {
+          width: 60px;
+          height: 60px;
+          background-color: #25D366;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 30px;
+          box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+          transition: all 0.3s ease;
+        }
+        
+        .whatsapp-link:hover {
+          transform: scale(1.1);
+          box-shadow: 0 6px 20px rgba(37, 211, 102, 0.6);
+        }
+        
+        @keyframes fadeInSlide {
+          from {
+            opacity: 0;
+            transform: translateX(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes pulse {
+          0% {
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+          }
+          50% {
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.6);
+          }
+          100% {
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+          }
+        }
+        
+        @keyframes wiggle {
+          0%, 100% {
+            transform: translateX(0);
+          }
+          25% {
+            transform: translateX(-2px);
+          }
+          75% {
+            transform: translateX(2px);
+          }
+        }
+        
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-5px);
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .ai-chat-float {
+            bottom: 90px;
+            right: 20px;
+          }
+          
+          .ai-chat-message {
+            font-size: 12px;
+            padding: 10px 16px;
+          }
+          
+          .ai-chat-link {
+            width: 55px;
+            height: 55px;
+            font-size: 24px;
+          }
+          
+          .whatsapp-float {
+            bottom: 20px;
+            right: 20px;
+          }
+          
+          .whatsapp-link {
+            width: 55px;
+            height: 55px;
+            font-size: 26px;
+          }
+        }
+      `}</style>
     </>
   )
 }
