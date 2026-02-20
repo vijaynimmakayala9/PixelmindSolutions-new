@@ -161,8 +161,7 @@ function Contact() {
                             <span className="text-white">Location</span>
                             <h5 className="mt-1 text-white">
                               <a className="text-white" href="https://maps.app.goo.gl/GkfdjzVF9vguB2Dd8" target="_blank" rel="noopener noreferrer">
-                                Manjeera Trinity Corporate, JNTU-Hitech City Road, KPHB Phase 1, Kukatpally, Hyderabad
-                              </a>
+                                Plot No 63, Sri Residency, 1st Floor 101, KPHB 5th Phase, Kukatpally, Hyderabad, Telangana 500085                              </a>
                             </h5>
                           </div>
                         </div>
@@ -359,7 +358,7 @@ function Contact() {
                 <div className="col-12">
                   <div className="map-container">
                     <iframe
-                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d668.7270662045914!2d78.39230197517291!3d17.489051779814673!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bcb918dab342375%3A0x180a04af0c47f594!2sManjeera%20Trinity%20Corporate!5e1!3m2!1sen!2sin!4v1752847604252!5m2!1sen!2sin"
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3483.4715008441653!2d78.394134!3d17.480936000000003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bcb918f8aac4aa7%3A0x6162c27fe1f89599!2s63%2C%205th%20Phase%20Road%2C%20Kukatpally%20Housing%20Board%20Colony%2C%20KPHB%205th%20Phase%2C%20Moosapet%2C%20Hyderabad%2C%20Telangana%20500085!5e1!3m2!1sen!2sin!4v1771583822352!5m2!1sen!2sin"
                       width="100%"
                       height="450"
                       style={{ border: 0 }}
