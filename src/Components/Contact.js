@@ -358,7 +358,7 @@ function Contact() {
                 <div className="col-12">
                   <div className="map-container">
                     <iframe
-                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3483.4715008441653!2d78.394134!3d17.480936000000003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bcb918f8aac4aa7%3A0x6162c27fe1f89599!2s63%2C%205th%20Phase%20Road%2C%20Kukatpally%20Housing%20Board%20Colony%2C%20KPHB%205th%20Phase%2C%20Moosapet%2C%20Hyderabad%2C%20Telangana%20500085!5e1!3m2!1sen!2sin!4v1771583822352!5m2!1sen!2sin"
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4514.143746212494!2d78.3941646!3d17.480906400000002!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xc3f9ee6211d7041%3A0x57e8ab2675c2f578!2sPIXELMINDSOLUTIONS%20PVT.LTD%20-%20Software%20Company%20in%20Hyderabad!5e1!3m2!1sen!2sin!4v1772010688017!5m2!1sen!2sin"
                       width="100%"
                       height="450"
                       style={{ border: 0 }}
