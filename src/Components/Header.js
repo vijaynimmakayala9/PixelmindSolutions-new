@@ -46,20 +46,29 @@ function Header() {
 
   const classes = `${sticky}`;
 
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // simulate page ready
+    console.log("started");
+    const timer = setTimeout(() => {
+      setLoading(false);
+      console.log("false");
+    }, 1800); // animation duration match
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <>
       <div>
-        {/* Preloader area start */}
-        <div className="loading">
-          <span className="text-capitalize">L</span>
-          <span>o</span>
-          <span>a</span>
-          <span>d</span>
-          <span>i</span>
-          <span>n</span>
-          <span>g</span>
+        {/* PRELOADER */}
+        <div id="preloader" className={loading ? "" : "isdone"}></div>
+
+        <div className={`loading ${loading ? "" : "isdone"}`}>
+          <span>L</span><span>o</span><span>a</span>
+          <span>d</span><span>i</span><span>n</span><span>g</span>
         </div>
-        <div id="preloader"></div>
         {/* Preloader area end */}
         {/* Mouse cursor area start here */}
         <div className="mouse-cursor cursor-outer" />
