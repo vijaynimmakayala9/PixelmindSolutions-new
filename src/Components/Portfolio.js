@@ -37,13 +37,13 @@ function Portfolio() {
             image: "/assets/images/banner/carnival.jpg", icon: "/assets/images/logo/carnival.png",
             websiteLink: "https://carnivalcastle.com/",
         },
-        {
-            id: 5, title: "1 SQUARE", type: "app",
-            description: "1Square is a clever and safe community marketplace platform created especially for Hyderabad. It facilitates the discovery, listing, and trading of goods within the community by bringing together local consumers and sellers with smooth listing, transparent communication, and secure transactions.",
-            image: "/assets/images/banner/onesquare.png", icon: "/assets/images/logo/onesquare.png",
-            playstoreLink: "https://play.google.com/store/apps/details?id=com.onesquare.onesquare",
-            appstoreLink: "https://apps.apple.com/app/1-square/com.onesquare.onesquare",
-        },
+        // {
+        //     id: 5, title: "1 SQUARE", type: "app",
+        //     description: "1Square is a clever and safe community marketplace platform created especially for Hyderabad. It facilitates the discovery, listing, and trading of goods within the community by bringing together local consumers and sellers with smooth listing, transparent communication, and secure transactions.",
+        //     image: "/assets/images/banner/onesquare.png", icon: "/assets/images/logo/onesquare.png",
+        //     playstoreLink: "https://play.google.com/store/apps/details?id=com.onesquare.onesquare",
+        //     appstoreLink: "https://apps.apple.com/app/1-square/com.onesquare.onesquare",
+        // },
         // {
         //     id: 6, title: "ATOZ KEY SOLUTION", type: "website",
         //     description: "Atoz Key Solution is a modern social media and digital platform designed to connect people, businesses, and creators in one ecosystem. It enables users to share posts, run ads, manage campaigns, and interact with communities while offering powerful tools for digital growth and brand promotion.",
