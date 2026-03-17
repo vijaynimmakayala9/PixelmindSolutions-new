@@ -1,447 +1,536 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { MapPin, Globe, Building, Phone, Flag, Clock, Wifi, Info, ExternalLink } from 'lucide-react';
+// utils/AdminVisitors.js
+import React, { useState, useEffect } from 'react';
+import { 
+  Users, 
+  Globe, 
+  Monitor, 
+  Smartphone,
+  Tablet,
+  Laptop,
+  Chrome,
+  Apple,
+  Windows,
+  MapPin,
+  Calendar,
+  Search,
+  RefreshCw,
+  Download,
+  Eye,
+  X,
+  Clock,
+  TrendingUp,
+  Activity,
+  Filter
+} from 'lucide-react';
+import { BiWindows } from 'react-icons/bi';
+
+const API_URL = process.env.REACT_APP_API_URL || "https://pms-tracker-2.onrender.com";
 
 const AdminVisitors = () => {
-    const [visitors, setVisitors] = useState([]);
-    const [ipDetails, setIpDetails] = useState({});
-    const [selectedIp, setSelectedIp] = useState("");
-    const [loading, setLoading] = useState(false);
+  const [visitors, setVisitors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    today: 0,
+    unique: 0,
+    countries: []
+  });
+  const [selectedVisitor, setSelectedVisitor] = useState(null);
+  const [ipDetails, setIpDetails] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [dateRange, setDateRange] = useState('all');
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
-    useEffect(() => {
-        fetchVisitors();
-    }, []);
-
-    const fetchVisitors = async () => {
-        try {
-            const res = await axios.get("https://pms-tracker-2.onrender.com/api/visitors");
-            setVisitors(res.data);
-        } catch (error) {
-            console.error("Error fetching visitors:", error);
+  // Fetch visitors data
+  const fetchVisitors = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/visitors?limit=100`);
+      const data = await response.json();
+      setVisitors(data.data || []);
+      
+      // Calculate stats
+      const today = new Date().toDateString();
+      const todayCount = data.data?.filter(v => 
+        new Date(v.createdAt).toDateString() === today
+      ).length || 0;
+      
+      const uniqueIPs = new Set(data.data?.map(v => v.ip) || []).size;
+      
+      // Country stats
+      const countryMap = {};
+      data.data?.forEach(v => {
+        if (v.country) {
+          countryMap[v.country] = (countryMap[v.country] || 0) + 1;
         }
-    };
+      });
+      
+      const countries = Object.entries(countryMap)
+        .map(([country, count]) => ({ country, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
 
-    const handleIpClick = async (ip) => {
-        setSelectedIp(ip);
-        setIpDetails({});
-        setLoading(true);
+      setStats({
+        total: data.pagination?.totalItems || data.data?.length || 0,
+        today: todayCount,
+        unique: uniqueIPs,
+        countries
+      });
+    } catch (err) {
+      console.error("Failed to fetch visitors:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        const modal = new window.bootstrap.Modal(
-            document.getElementById("ipModal")
-        );
-        modal.show();
+  // Fetch IP details
+  const fetchIpDetails = async (ip) => {
+    try {
+      setIpDetails(null);
+      const response = await fetch(`${API_URL}/api/ip-details/${ip}`);
+      const data = await response.json();
+      setIpDetails(data);
+    } catch (err) {
+      console.error("Failed to fetch IP details:", err);
+    }
+  };
 
-        try {
-            const res = await axios.get(
-                `https://pms-tracker-2.onrender.com/api/ip-details/${ip}`
-            );
-            setIpDetails(res.data);
-        } catch (err) {
-            setIpDetails({
-                error: true,
-                message: "Unable to fetch location"
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
+  // Initial fetch and auto-refresh
+  useEffect(() => {
+    fetchVisitors();
+    
+    let interval;
+    if (autoRefresh) {
+      interval = setInterval(fetchVisitors, 30000); // Refresh every 30 seconds
+    }
+    
+    return () => clearInterval(interval);
+  }, [autoRefresh]);
 
-    const ConnectionBadge = ({ org }) => (
-        <span className="badge bg-info text-dark d-inline-flex align-items-center gap-1">
-            <Wifi size={12} />
-            {org || "Unknown ISP"}
-        </span>
-    );
+  // Filter visitors based on search and filters
+  const filteredVisitors = visitors.filter(visitor => {
+    // Search filter
+    const matchesSearch = 
+      visitor.ip?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      visitor.country?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      visitor.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      visitor.browser?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      visitor.os?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      visitor.page?.toLowerCase().includes(searchTerm.toLowerCase());
 
+    if (!matchesSearch) return false;
+
+    // Date filter
+    if (dateRange !== 'all') {
+      const now = new Date();
+      const visitorDate = new Date(visitor.createdAt);
+      const diffDays = Math.floor((now - visitorDate) / (1000 * 60 * 60 * 24));
+      
+      switch(dateRange) {
+        case 'today':
+          if (diffDays > 0) return false;
+          break;
+        case 'week':
+          if (diffDays > 7) return false;
+          break;
+        case 'month':
+          if (diffDays > 30) return false;
+          break;
+        default:
+          break;
+      }
+    }
+
+    // Type filter
+    switch(filter) {
+      case 'desktop':
+        return visitor.device === 'desktop';
+      case 'mobile':
+        return visitor.device === 'mobile';
+      case 'tablet':
+        return visitor.device === 'tablet';
+      default:
+        return true;
+    }
+  });
+
+  // Get device icon
+  const getDeviceIcon = (device) => {
+    switch(device) {
+      case 'mobile':
+        return <Smartphone className="h-4 w-4" />;
+      case 'tablet':
+        return <Tablet className="h-4 w-4" />;
+      default:
+        return <Laptop className="h-4 w-4" />;
+    }
+  };
+
+  // Get browser icon
+  const getBrowserIcon = (browser) => {
+    if (browser?.toLowerCase().includes('chrome')) {
+      return <Chrome className="h-4 w-4" />;
+    } else if (browser?.toLowerCase().includes('safari')) {
+      return <Monitor className="h-4 w-4" />;
+    } else if (browser?.toLowerCase().includes('firefox')) {
+      return <Monitor className="h-4 w-4" />;
+    }
+    return <Monitor className="h-4 w-4" />;
+  };
+
+  // Get OS icon
+  const getOsIcon = (os) => {
+    if (os?.toLowerCase().includes('windows')) {
+      return <BiWindows className="h-4 w-4" />;
+    } else if (os?.toLowerCase().includes('mac')) {
+      return <Apple className="h-4 w-4" />;
+    } else if (os?.toLowerCase().includes('linux')) {
+      return <Monitor className="h-4 w-4" />;
+    }
+    return <Monitor className="h-4 w-4" />;
+  };
+
+  // Format time
+  const formatTime = (date) => {
+    const now = new Date();
+    const past = new Date(date);
+    const diffMs = now - past;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  };
+
+  if (loading) {
     return (
-        <div className="container-fluid py-4" style={{ backgroundColor: "#f8f9fc" }}>
-            {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h3 className="fw-bold mb-1" style={{ color: "#1e293b" }}>
-                        <Globe className="me-2" size={28} style={{ color: "#4f46e5" }} />
-                        Visitors Dashboard
-                    </h3>
-                    <p className="text-muted mb-0">
-                        Track and monitor all visitor activities in real-time
-                    </p>
-                </div>
-                <button
-                    className="btn btn-primary d-flex align-items-center gap-2"
-                    onClick={fetchVisitors}
-                    style={{ backgroundColor: "#4f46e5", borderColor: "#4f46e5" }}
-                >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-                    </svg>
-                    Refresh Data
-                </button>
-            </div>
-
-            {/* Stats Cards */}
-            <div className="row g-3 mb-4">
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm">
-                        <div className="card-body">
-                            <div className="d-flex align-items-center">
-                                <div className="rounded-circle p-3 me-3" style={{ backgroundColor: "#e0e7ff" }}>
-                                    <Users size={20} style={{ color: "#4f46e5" }} />
-                                </div>
-                                <div>
-                                    <h6 className="text-muted mb-1">Total Visitors</h6>
-                                    <h4 className="mb-0 fw-bold">{visitors.length}</h4>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm">
-                        <div className="card-body">
-                            <div className="d-flex align-items-center">
-                                <div className="rounded-circle p-3 me-3" style={{ backgroundColor: "#ffe4e6" }}>
-                                    <Globe size={20} style={{ color: "#e11d48" }} />
-                                </div>
-                                <div>
-                                    <h6 className="text-muted mb-1">Unique IPs</h6>
-                                    <h4 className="mb-0 fw-bold">
-                                        {new Set(visitors.map(v => v.ip)).size}
-                                    </h4>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm">
-                        <div className="card-body">
-                            <div className="d-flex align-items-center">
-                                <div className="rounded-circle p-3 me-3" style={{ backgroundColor: "#dbeafe" }}>
-                                    <Smartphone size={20} style={{ color: "#2563eb" }} />
-                                </div>
-                                <div>
-                                    <h6 className="text-muted mb-1">Devices</h6>
-                                    <h4 className="mb-0 fw-bold">
-                                        {new Set(visitors.map(v => v.device)).size}
-                                    </h4>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm">
-                        <div className="card-body">
-                            <div className="d-flex align-items-center">
-                                <div className="rounded-circle p-3 me-3" style={{ backgroundColor: "#f3e8ff" }}>
-                                    <MapPin size={20} style={{ color: "#9333ea" }} />
-                                </div>
-                                <div>
-                                    <h6 className="text-muted mb-1">Countries</h6>
-                                    <h4 className="mb-0 fw-bold">
-                                        {new Set(visitors.map(v => `${v.city}, ${v.country}`)).size}
-                                    </h4>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Table */}
-            <div className="card border-0 shadow-sm">
-                <div className="card-body p-0">
-                    <div className="table-responsive">
-                        <table className="table table-hover align-middle mb-0">
-                            <thead style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>
-                                <tr>
-                                    <th className="px-4 py-3">#</th>
-                                    <th className="px-4 py-3">IP Address</th>
-                                    <th className="px-4 py-3">Device Info</th>
-                                    <th className="px-4 py-3">Location</th>
-                                    <th className="px-4 py-3">Page Visited</th>
-                                    <th className="px-4 py-3">Timestamp</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {visitors.map((v, i) => (
-                                    <tr key={i} className="border-bottom">
-                                        <td className="px-4 py-3">
-                                            <span className="fw-semibold text-muted">#{i + 1}</span>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <button
-                                                className="btn btn-link p-0 text-decoration-none fw-medium"
-                                                onClick={() => handleIpClick(v.ip)}
-                                                style={{ color: "#4f46e5" }}
-                                            >
-                                                {v.ip}
-                                            </button>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="d-flex flex-column">
-                                                <span className="fw-medium">{v.device || "Unknown"}</span>
-                                                <small className="text-muted">
-                                                    {v.browser} • {v.os}
-                                                </small>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="d-flex align-items-center gap-2">
-                                                {v.country && (
-                                                    <img
-                                                        src={`https://flagcdn.com/20x15/${v.country?.toLowerCase?.() || 'in'}.png`}
-                                                        alt={v.country}
-                                                        style={{ width: 20, height: 15, objectFit: 'cover' }}
-                                                    />
-                                                )}
-                                                <span>{v.city}, {v.country}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className="badge bg-light text-dark p-2">
-                                                {v.page || "/"}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="d-flex flex-column">
-                                                <span className="fw-medium">
-                                                    {new Date(v.createdAt).toLocaleDateString()}
-                                                </span>
-                                                <small className="text-muted">
-                                                    {new Date(v.createdAt).toLocaleTimeString()}
-                                                </small>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            {/* IP Details Modal */}
-            <div className="modal fade" id="ipModal" tabIndex="-1">
-                <div className="modal-dialog modal-lg modal-dialog-centered">
-                    <div className="modal-content border-0">
-                        <div className="modal-header border-0" style={{ backgroundColor: "#4f46e5", color: "white" }}>
-                            <h5 className="modal-title d-flex align-items-center gap-2">
-                                <Globe size={20} />
-                                IP Details: {selectedIp}
-                            </h5>
-                            <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div className="modal-body p-4">
-                            {loading ? (
-                                <div className="text-center py-5">
-                                    <div className="spinner-border text-primary mb-3" role="status">
-                                        <span className="visually-hidden">Loading...</span>
-                                    </div>
-                                    <p className="text-muted">Fetching IP details...</p>
-                                </div>
-                            ) : ipDetails.error ? (
-                                <div className="alert alert-danger d-flex align-items-center gap-3 py-4">
-                                    <Info size={24} />
-                                    <div>
-                                        <h6 className="mb-1">Error</h6>
-                                        <p className="mb-0">{ipDetails.message}</p>
-                                    </div>
-                                </div>
-                            ) : ipDetails.ip ? (
-                                <div className="row g-4">
-                                    {/* Main Info Card */}
-                                    <div className="col-12">
-                                        <div className="card border-0 bg-light">
-                                            <div className="card-body">
-                                                <div className="d-flex align-items-center gap-3">
-                                                    {ipDetails.flag?.img && (
-                                                        <img
-                                                            src={ipDetails.flag.img}
-                                                            alt={ipDetails.country}
-                                                            style={{ width: 48, height: 36, objectFit: 'cover', borderRadius: 4 }}
-                                                        />
-                                                    )}
-                                                    <div>
-                                                        <h4 className="mb-1">{ipDetails.city}, {ipDetails.country}</h4>
-                                                        <div className="d-flex gap-3">
-                                                            <span className="badge bg-secondary">{ipDetails.continent}</span>
-                                                            <span className="badge bg-info">{ipDetails.type}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Location Details */}
-                                    <div className="col-md-6">
-                                        <div className="card border-0 shadow-sm h-100">
-                                            <div className="card-header bg-transparent border-0 pt-3">
-                                                <h6 className="fw-semibold mb-0 d-flex align-items-center gap-2">
-                                                    <MapPin size={16} className="text-primary" />
-                                                    Location Details
-                                                </h6>
-                                            </div>
-                                            <div className="card-body pt-0">
-                                                <table className="table table-sm table-borderless">
-                                                    <tbody>
-                                                        <tr>
-                                                            <td className="text-muted">Country:</td>
-                                                            <td className="fw-medium">
-                                                                {ipDetails.country} ({ipDetails.country_code})
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="text-muted">Region:</td>
-                                                            <td className="fw-medium">{ipDetails.region} ({ipDetails.region_code})</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="text-muted">City:</td>
-                                                            <td className="fw-medium">{ipDetails.city}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="text-muted">Postal Code:</td>
-                                                            <td className="fw-medium">{ipDetails.postal}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="text-muted">Coordinates:</td>
-                                                            <td className="fw-medium">
-                                                                {ipDetails.latitude}, {ipDetails.longitude}
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Connection Details */}
-                                    <div className="col-md-6">
-                                        <div className="card border-0 shadow-sm h-100">
-                                            <div className="card-header bg-transparent border-0 pt-3">
-                                                <h6 className="fw-semibold mb-0 d-flex align-items-center gap-2">
-                                                    <Wifi size={16} className="text-success" />
-                                                    Connection Details
-                                                </h6>
-                                            </div>
-                                            <div className="card-body pt-0">
-                                                <table className="table table-sm table-borderless">
-                                                    <tbody>
-                                                        <tr>
-                                                            <td className="text-muted">ISP:</td>
-                                                            <td className="fw-medium">{ipDetails.connection?.isp}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="text-muted">Organization:</td>
-                                                            <td className="fw-medium">{ipDetails.connection?.org}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="text-muted">ASN:</td>
-                                                            <td className="fw-medium">AS{ipDetails.connection?.asn}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="text-muted">Domain:</td>
-                                                            <td className="fw-medium">{ipDetails.connection?.domain}</td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Timezone Info */}
-                                    <div className="col-md-6">
-                                        <div className="card border-0 shadow-sm">
-                                            <div className="card-header bg-transparent border-0 pt-3">
-                                                <h6 className="fw-semibold mb-0 d-flex align-items-center gap-2">
-                                                    <Clock size={16} className="text-warning" />
-                                                    Timezone Information
-                                                </h6>
-                                            </div>
-                                            <div className="card-body pt-0">
-                                                <table className="table table-sm table-borderless">
-                                                    <tbody>
-                                                        <tr>
-                                                            <td className="text-muted">Timezone:</td>
-                                                            <td className="fw-medium">{ipDetails.timezone?.id}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="text-muted">Abbreviation:</td>
-                                                            <td className="fw-medium">{ipDetails.timezone?.abbr}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="text-muted">UTC Offset:</td>
-                                                            <td className="fw-medium">{ipDetails.timezone?.utc}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="text-muted">DST:</td>
-                                                            <td className="fw-medium">{ipDetails.timezone?.is_dst ? 'Yes' : 'No'}</td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Additional Info */}
-                                    <div className="col-md-6">
-                                        <div className="card border-0 shadow-sm">
-                                            <div className="card-header bg-transparent border-0 pt-3">
-                                                <h6 className="fw-semibold mb-0 d-flex align-items-center gap-2">
-                                                    <Info size={16} className="text-info" />
-                                                    Additional Information
-                                                </h6>
-                                            </div>
-                                            <div className="card-body pt-0">
-                                                <table className="table table-sm table-borderless">
-                                                    <tbody>
-                                                        <tr>
-                                                            <td className="text-muted">Calling Code:</td>
-                                                            <td className="fw-medium">+{ipDetails.calling_code}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="text-muted">Capital:</td>
-                                                            <td className="fw-medium">{ipDetails.capital}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="text-muted">Borders:</td>
-                                                            <td className="fw-medium">{ipDetails.borders}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="text-muted">EU Member:</td>
-                                                            <td className="fw-medium">{ipDetails.is_eu ? 'Yes' : 'No'}</td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Flag Display */}
-                                    {ipDetails.flag?.emoji && (
-                                        <div className="col-12">
-                                            <div className="alert alert-light mb-0 d-flex align-items-center gap-3">
-                                                <span style={{ fontSize: '2rem' }}>{ipDetails.flag.emoji}</span>
-                                                <div>
-                                                    <small className="text-muted d-block">Flag Emoji</small>
-                                                    <code>{ipDetails.flag.emoji_unicode}</code>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : null}
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading visitor data...</p>
         </div>
+      </div>
     );
-};
+  }
 
-// Missing icon components
-const Users = (props) => <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
-const Smartphone = (props) => <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12" y2="18" /></svg>;
+  return (
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Visitor Analytics</h1>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => fetchVisitors()}
+              className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+            >
+              <RefreshCw className="h-4 w-4 text-gray-600" />
+              <span>Refresh</span>
+            </button>
+            <label className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="rounded text-blue-600"
+              />
+              <span className="text-sm text-gray-700">Auto-refresh</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Total Visitors</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+              </div>
+              <div className="bg-blue-100 p-3 rounded-lg">
+                <Users className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Today</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.today}</p>
+              </div>
+              <div className="bg-green-100 p-3 rounded-lg">
+                <Activity className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Unique IPs</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.unique}</p>
+              </div>
+              <div className="bg-purple-100 p-3 rounded-lg">
+                <Globe className="h-6 w-6 text-purple-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Countries</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.countries.length}</p>
+              </div>
+              <div className="bg-orange-100 p-3 rounded-lg">
+                <MapPin className="h-6 w-6 text-orange-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Top Countries */}
+        {stats.countries.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Top Countries</h2>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {stats.countries.map(({ country, count }) => (
+                <div key={country} className="text-center">
+                  <div className="text-2xl mb-2">📍</div>
+                  <div className="font-medium text-gray-900">{country}</div>
+                  <div className="text-sm text-gray-600">{count} visitors</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Filters */}
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-[200px]">
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search IP, country, browser..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Devices</option>
+              <option value="desktop">Desktop</option>
+              <option value="mobile">Mobile</option>
+              <option value="tablet">Tablet</option>
+            </select>
+
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="week">Last 7 Days</option>
+              <option value="month">Last 30 Days</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Visitors Table */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Browser/OS</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Page</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredVisitors.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
+                      No visitors found
+                    </td>
+                  </tr>
+                ) : (
+                  filteredVisitors.map((visitor) => (
+                    <tr key={visitor._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900">
+                          <Clock className="h-4 w-4 text-gray-400 mr-2" />
+                          {formatTime(visitor.createdAt)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
+                        {visitor.ip}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {visitor.country || 'Unknown'}
+                        </div>
+                        {visitor.city && (
+                          <div className="text-xs text-gray-500">{visitor.city}</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900">
+                          {getDeviceIcon(visitor.device)}
+                          <span className="ml-2 capitalize">{visitor.device}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-2">
+                          {getBrowserIcon(visitor.browser)}
+                          <span className="text-sm text-gray-900">{visitor.browser || 'Unknown'}</span>
+                          <span className="text-xs text-gray-500">/</span>
+                          {getOsIcon(visitor.os)}
+                          <span className="text-sm text-gray-600">{visitor.os || 'Unknown'}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900 max-w-xs truncate">
+                          {visitor.page}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => {
+                            setSelectedVisitor(visitor);
+                            fetchIpDetails(visitor.ip);
+                          }}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Visitor Details Modal */}
+        {selectedVisitor && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center p-6 border-b">
+                <h2 className="text-xl font-bold text-gray-900">Visitor Details</h2>
+                <button
+                  onClick={() => {
+                    setSelectedVisitor(null);
+                    setIpDetails(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* Basic Info */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">IP Address</p>
+                      <p className="font-mono text-gray-900">{selectedVisitor.ip}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Time</p>
+                      <p className="text-gray-900">{new Date(selectedVisitor.createdAt).toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Country</p>
+                      <p className="text-gray-900">{selectedVisitor.country || 'Unknown'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">City</p>
+                      <p className="text-gray-900">{selectedVisitor.city || 'Unknown'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Device Info */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Device Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Device</p>
+                      <p className="text-gray-900 capitalize">{selectedVisitor.device}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Browser</p>
+                      <p className="text-gray-900">{selectedVisitor.browser || 'Unknown'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Operating System</p>
+                      <p className="text-gray-900">{selectedVisitor.os || 'Unknown'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Page Info */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Page Visited</h3>
+                  <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{selectedVisitor.page}</p>
+                </div>
+
+                {/* IP Details from external API */}
+                {ipDetails && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">IP Geolocation Details</h3>
+                    <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+                      <div>
+                        <p className="text-sm text-gray-600">ISP</p>
+                        <p className="text-gray-900">{ipDetails.connection?.isp || 'Unknown'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Organization</p>
+                        <p className="text-gray-900">{ipDetails.connection?.org || 'Unknown'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Timezone</p>
+                        <p className="text-gray-900">{ipDetails.timezone?.id || 'Unknown'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Coordinates</p>
+                        <p className="text-gray-900">
+                          {ipDetails.latitude && ipDetails.longitude 
+                            ? `${ipDetails.latitude}, ${ipDetails.longitude}`
+                            : 'Unknown'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default AdminVisitors;
