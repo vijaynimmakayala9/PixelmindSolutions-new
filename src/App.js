@@ -19,13 +19,17 @@ import Blog1 from './blogs/Blog1';
 import Blog2 from './blogs/Blog2';
 import Blog3 from './blogs/Blog3';
 import Portfolio from './Components/Portfolio';
+import GlobalTracker from './utils/GlobalTracker';
+import AdminVisitors from './utils/AdminVisitors';
 
 
 function App() {
   return (
     <>
       <HelmetProvider>
+        <GlobalTracker />
         <Routes>
+          
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/services" element={<Services />} />
@@ -40,6 +44,9 @@ function App() {
           <Route path="/blog/empowering-businesses-through-it-services" element={<Blog1 />} />
           <Route path="/blog/professional-it-consulting-and-app-development" element={<Blog2 />} />
           <Route path="/blog/application-maintainence-and-digital-growth-strategy" element={<Blog3 />} />
+
+          <Route path="/data" element={<AdminVisitors />} />
+
           {/* <Route path="/" element={<Home />} /> */}
         </Routes>
       </HelmetProvider>
